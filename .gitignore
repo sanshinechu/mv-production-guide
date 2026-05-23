@@ -1,0 +1,33 @@
+# Vite
+dist/
+.vite/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Temporary files
+.env.local
+.env.*.local
+*.tmp
+
+# Build outputs
+.turbo/
+out/
+
+# IDE
+.cursor/
+.eclipse/
