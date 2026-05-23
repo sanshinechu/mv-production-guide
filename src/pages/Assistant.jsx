@@ -8,6 +8,7 @@ export default function Assistant() {
   const { formData, updateFormData, generateAnalysis, analysis, reset, exportAsMarkdown } = useProjectStore()
   const { calculate, loading, errors } = useCalculator()
   const [isGenerated, setIsGenerated] = useState(false)
+  const [step, setStep] = useState(1)
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -36,7 +37,15 @@ export default function Assistant() {
     document.body.removeChild(element)
   }
 
-  // 不是 Step 3，不顯示成本資訊
+  const handleNextStep = () => {
+    if (step < 3) setStep(step + 1)
+  }
+
+  const handlePrevStep = () => {
+    if (step > 1) setStep(step - 1)
+  }
+
+  // 成本數據
   const cost = analysis?.cost || {
     imageCost: 0,
     videoCost: 0,
@@ -44,6 +53,7 @@ export default function Assistant() {
     totalCost: 0
   }
 
+  // 結果頁面
   if (isGenerated && analysis?.valid) {
     return (
       <div className="max-w-4xl mx-auto py-8">
@@ -132,6 +142,7 @@ export default function Assistant() {
           <button
             onClick={() => {
               setIsGenerated(false)
+              setStep(1)
               reset()
             }}
             className="bg-slate-600 hover:bg-slate-700 text-white px-8 py-3 rounded-lg font-semibold transition"
@@ -143,6 +154,7 @@ export default function Assistant() {
     )
   }
 
+  // 表單頁面
   return (
     <div className="max-w-3xl mx-auto py-8">
       {/* 進度條 */}
@@ -152,16 +164,16 @@ export default function Assistant() {
             <div
               key={i}
               className={`h-2 flex-1 rounded-full transition ${
-                i <= (isGenerated ? 4 : 1) ? 'bg-blue-600' : 'bg-slate-200'
+                i <= step ? 'bg-blue-600' : 'bg-slate-200'
               }`}
             />
           ))}
         </div>
-        <p className="text-sm text-slate-600">第 1 步，共 3 步</p>
+        <p className="text-sm text-slate-600">第 {step} 步，共 3 步</p>
       </div>
 
       <div className="bg-white rounded-lg border border-slate-200 p-8">
-        {/* Step 1 */}
+        {/* Step 1: 基本信息 */}
         {step === 1 && (
           <div className="space-y-6">
             <div>
@@ -216,7 +228,7 @@ export default function Assistant() {
                 {[1, 2, 3].map(num => (
                   <button
                     key={num}
-                    onClick={() => setFormData(prev => ({ ...prev, characters: num }))}
+                    onClick={() => updateFormData({ characters: num })}
                     className={`px-6 py-3 rounded-lg font-semibold transition ${
                       formData.characters === num
                         ? 'bg-blue-600 text-white'
@@ -231,91 +243,106 @@ export default function Assistant() {
           </div>
         )}
 
-        {/* 工具選擇面板（始終顯示） */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div>
-            <h3 className="text-lg font-bold text-slate-900 mb-4">🎨 圖像生成</h3>
-            <div className="space-y-3">
-              {Object.entries(IMAGE_MODELS)
-                .slice(0, 3)
-                .map(([id, model]) => (
-                  <label key={id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition">
-                    <input
-                      type="radio"
-                      name="imageModel"
-                      value={id}
-                      checked={formData.imageModel === id}
-                      onChange={handleInputChange}
-                      className="w-4 h-4 mt-1"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-slate-900">{model.name}</div>
-                      <div className="text-xs text-slate-600 mt-1">${model.price}/張 - {model.quality}</div>
-                      <div className="text-xs text-slate-500 mt-1">{model.description}</div>
-                    </div>
-                  </label>
-                ))}
+        {/* Step 2: 工具選擇 */}
+        {step === 2 && (
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">選擇工具</h2>
+              <p className="text-slate-600">根據你的需求選擇合適的 AI 工具</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 mb-4">🎨 圖像生成</h3>
+                <div className="space-y-3">
+                  {Object.entries(IMAGE_MODELS)
+                    .slice(0, 3)
+                    .map(([id, model]) => (
+                      <label key={id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                        <input
+                          type="radio"
+                          name="imageModel"
+                          value={id}
+                          checked={formData.imageModel === id}
+                          onChange={handleInputChange}
+                          className="w-4 h-4 mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="font-semibold text-slate-900">{model.name}</div>
+                          <div className="text-xs text-slate-600 mt-1">${model.price}/張 - {model.quality}</div>
+                          <div className="text-xs text-slate-500 mt-1">{model.description}</div>
+                        </div>
+                      </label>
+                    ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 mb-4">🎬 影片生成</h3>
+                <div className="space-y-3">
+                  {Object.entries(VIDEO_MODELS)
+                    .slice(0, 3)
+                    .map(([id, model]) => (
+                      <label key={id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition">
+                        <input
+                          type="radio"
+                          name="videoModel"
+                          value={id}
+                          checked={formData.videoModel === id}
+                          onChange={handleInputChange}
+                          className="w-4 h-4 mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="font-semibold text-slate-900">{model.name}</div>
+                          <div className="text-xs text-slate-600 mt-1">${model.price}/{model.pricePerUnit} - {model.quality}</div>
+                          <div className="text-xs text-slate-500 mt-1">{model.description}</div>
+                        </div>
+                      </label>
+                    ))}
+                </div>
+              </div>
             </div>
           </div>
+        )}
 
-          <div>
-            <h3 className="text-lg font-bold text-slate-900 mb-4">🎬 影片生成</h3>
-            <div className="space-y-3">
-              {Object.entries(VIDEO_MODELS)
-                .slice(0, 3)
-                .map(([id, model]) => (
-                  <label key={id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition">
-                    <input
-                      type="radio"
-                      name="videoModel"
-                      value={id}
-                      checked={formData.videoModel === id}
-                      onChange={handleInputChange}
-                      className="w-4 h-4 mt-1"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-slate-900">{model.name}</div>
-                      <div className="text-xs text-slate-600 mt-1">${model.price}/{model.pricePerUnit} - {model.quality}</div>
-                      <div className="text-xs text-slate-500 mt-1">{model.description}</div>
-                    </div>
-                  </label>
-                ))}
+        {/* Step 3: 預算優先級 */}
+        {step === 3 && (
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">預算優先級</h2>
+              <p className="text-slate-600">選擇最適合你的預算策略</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {Object.entries(BUDGET_PRESETS).map(([id, preset]) => (
+                <label
+                  key={id}
+                  className={`p-6 border rounded-lg cursor-pointer transition ${
+                    formData.priority === id
+                      ? 'border-blue-600 bg-blue-50 shadow-md'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="priority"
+                    value={id}
+                    checked={formData.priority === id}
+                    onChange={handleInputChange}
+                    className="mb-3"
+                  />
+                  <div className="text-2xl mb-2">{preset.emoji}</div>
+                  <div className="font-bold text-slate-900">{preset.name}</div>
+                  <p className="text-sm text-slate-600 mt-2">{preset.description}</p>
+                </label>
+              ))}
             </div>
           </div>
-        </div>
-
-        {/* 預算等級選擇 */}
-        <div className="mb-8">
-          <h3 className="text-lg font-bold text-slate-900 mb-4">💡 選擇預算優先級</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {Object.entries(BUDGET_PRESETS).map(([id, preset]) => (
-              <label
-                key={id}
-                className={`p-6 border rounded-lg cursor-pointer transition ${
-                  formData.priority === id
-                    ? 'border-blue-600 bg-blue-50 shadow-md'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="priority"
-                  value={id}
-                  checked={formData.priority === id}
-                  onChange={handleInputChange}
-                  className="mb-3"
-                />
-                <div className="text-2xl mb-2">{preset.emoji}</div>
-                <div className="font-bold text-slate-900">{preset.name}</div>
-                <p className="text-sm text-slate-600 mt-2">{preset.description}</p>
-              </label>
-            ))}
-          </div>
-        </div>
+        )}
 
         {/* 錯誤提示 */}
         {errors.length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 mt-8">
             <p className="text-red-700 font-semibold mb-2">❌ 請檢查以下項目：</p>
             <ul className="list-disc list-inside space-y-1">
               {errors.map((error, index) => (
@@ -330,18 +357,33 @@ export default function Assistant() {
         {/* 操作按鈕 */}
         <div className="border-t mt-8 pt-8 flex justify-between">
           <button
-            onClick={() => reset()}
-            className="text-slate-600 hover:text-slate-900 font-semibold"
+            onClick={handlePrevStep}
+            disabled={step === 1}
+            className={`font-semibold py-2 px-6 rounded-lg transition ${
+              step === 1
+                ? 'text-slate-300 cursor-not-allowed'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
           >
-            🔄 重置表單
+            ← 上一步
           </button>
-          <button
-            onClick={handleGeneratePlan}
-            disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white px-8 py-3 rounded-lg font-semibold transition"
-          >
-            {loading ? '生成中...' : '✨ 生成我的 MV 計劃'}
-          </button>
+
+          {step === 3 ? (
+            <button
+              onClick={handleGeneratePlan}
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white px-8 py-3 rounded-lg font-semibold transition"
+            >
+              {loading ? '生成中...' : '✨ 生成我的 MV 計劃'}
+            </button>
+          ) : (
+            <button
+              onClick={handleNextStep}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition"
+            >
+              下一步 →
+            </button>
+          )}
         </div>
       </div>
     </div>
