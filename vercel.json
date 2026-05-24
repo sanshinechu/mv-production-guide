@@ -3,8 +3,5 @@
   "devCommand": "pnpm run dev",
   "installCommand": "pnpm install",
   "framework": "vite",
-  "outputDirectory": "dist",
-  "env": {
-    "VITE_APP_NAME": "@MV 製作完整指南"
-  }
+  "outputDirectory": "dist"
 }
