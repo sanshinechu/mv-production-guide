@@ -7,39 +7,60 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { generateCompleteAnalysis } from '../utils/calculations';
 
+// ====== 預設值（抽成常數，新增專案時用來重置）======
+const INITIAL_FORM_DATA = {
+  theme: '',
+  style: 'indie-pop',
+  duration: 180,
+  characters: 2,
+  imageModel: 'flux-dev',
+  videoModel: 'kling',
+  musicSource: 'suno',
+  priority: 'balanced',
+};
+
+const INITIAL_CHECKLIST = [
+  { id: 'mv01', title: 'MV_01: 創作歌詞', completed: false },
+  { id: 'mv02', title: 'MV_02: 設計主角', completed: false },
+  { id: 'mv03', title: 'MV_03: 撰寫場景提示詞', completed: false },
+  { id: 'mv04', title: 'MV_04: 生成分鏡圖', completed: false },
+  { id: 'mv05', title: 'MV_05: 截圖放大', completed: false },
+  { id: 'mv06', title: 'MV_06: 生成影片提示詞', completed: false },
+  { id: 'mv07', title: 'MV_07: 生圖和生影', completed: false },
+  { id: 'mv08', title: 'MV_08: 空拍和細節', completed: false },
+  { id: 'mv09', title: 'MV_09: 打光和效果', completed: false },
+  { id: 'step10', title: 'Step 10: FFmpeg 組裝', completed: false },
+  { id: 'step11', title: 'Step 11: 打包整理', completed: false },
+  { id: 'step12', title: 'Step 12: YouTube 上傳', completed: false },
+];
+
+// 回傳全新的預設狀態（深拷貝，避免共用參照）
+function freshProjectState() {
+  return {
+    formData: { ...INITIAL_FORM_DATA },
+    analysis: null,
+    currentStep: 1,
+    error: null,
+    checklist: INITIAL_CHECKLIST.map((item) => ({ ...item })),
+  };
+}
+
 export const useProjectStore = create(
   persist(
     (set, get) => ({
       // ====== 表單數據 ======
-      formData: {
-        theme: '',
-        style: 'indie-pop',
-        duration: 180,
-        characters: 2,
-        imageModel: 'flux-dev',
-        videoModel: 'kling',
-        musicSource: 'suno',
-        priority: 'balanced',
-      },
+      formData: { ...INITIAL_FORM_DATA },
 
       // ====== 計算結果 ======
       analysis: null,
 
       // ====== 檢查清單 ======
-      checklist: [
-        { id: 'mv01', title: 'MV_01: 創作歌詞', completed: false },
-        { id: 'mv02', title: 'MV_02: 設計主角', completed: false },
-        { id: 'mv03', title: 'MV_03: 撰寫場景提示詞', completed: false },
-        { id: 'mv04', title: 'MV_04: 生成分鏡圖', completed: false },
-        { id: 'mv05', title: 'MV_05: 截圖放大', completed: false },
-        { id: 'mv06', title: 'MV_06: 生成影片提示詞', completed: false },
-        { id: 'mv07', title: 'MV_07: 生圖和生影', completed: false },
-        { id: 'mv08', title: 'MV_08: 空拍和細節', completed: false },
-        { id: 'mv09', title: 'MV_09: 打光和效果', completed: false },
-        { id: 'step10', title: 'Step 10: FFmpeg 組裝', completed: false },
-        { id: 'step11', title: 'Step 11: 打包整理', completed: false },
-        { id: 'step12', title: 'Step 12: YouTube 上傳', completed: false },
-      ],
+      checklist: INITIAL_CHECKLIST.map((item) => ({ ...item })),
+
+      // ====== 多專案狀態 ======
+      activeProjectId: null, // 目前作用中的專案 doc id
+      projectName: '', // 目前專案名稱
+      projects: [], // 專案清單 [{ id, name, updatedAt }]
 
       // ====== UI 狀態 ======
       currentStep: 1, // 表單步驟 (1-3)
@@ -56,6 +77,25 @@ export const useProjectStore = create(
       setCurrentStep: (step) => {
         set({ currentStep: step });
       },
+
+      // ====== 多專案操作 ======
+      setProjects: (projects) => set({ projects }),
+
+      setActiveProject: (id, name) =>
+        set({ activeProjectId: id, projectName: name ?? '' }),
+
+      setProjectName: (name) => set({ projectName: name }),
+
+      // 把雲端專案資料灌進來（切換/載入專案時用）
+      applyProjectData: (data) =>
+        set((state) => ({
+          formData: data?.formData ?? state.formData,
+          analysis: data?.analysis ?? null,
+          checklist: data?.checklist ?? state.checklist,
+        })),
+
+      // 開新專案：表單、清單全部回到預設
+      resetForNewProject: () => set(freshProjectState()),
 
       // ====== 生成分析 ======
       generateAnalysis: () => {
@@ -185,6 +225,7 @@ export const useProjectStore = create(
         formData: state.formData,
         analysis: state.analysis,
         checklist: state.checklist,
+        activeProjectId: state.activeProjectId,
       }), // 只持久化這些字段
     }
   )
