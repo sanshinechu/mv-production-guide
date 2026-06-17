@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import AuthButton from './AuthButton'
 
 export default function Header() {
   return (
@@ -26,13 +27,14 @@ export default function Header() {
               🛠️ 製作助手
             </Link>
             <a
-              href="https://github.com"
+              href="https://github.com/sanshinechu/mv-production-guide"
               target="_blank"
               rel="noopener noreferrer"
               className="text-slate-600 hover:text-blue-600 transition"
             >
               ⭐ GitHub
             </a>
+            <AuthButton />
           </nav>
         </div>
       </div>
